@@ -271,3 +271,35 @@ events:
       Running the C compiler's linker: "/usr/bin/ld" "-v"
       GNU ld (GNU Binutils for Ubuntu) 2.42
 ...
+
+---
+events:
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/opt/clion-2025.2/bin/cmake/linux/x64/share/cmake-4.0/Modules/Internal/CheckSourceCompiles.cmake:104 (try_compile)"
+      - "/opt/clion-2025.2/bin/cmake/linux/x64/share/cmake-4.0/Modules/CheckCSourceCompiles.cmake:58 (cmake_check_source_compiles)"
+      - "/opt/clion-2025.2/bin/cmake/linux/x64/share/cmake-4.0/Modules/FindThreads.cmake:97 (check_c_source_compiles)"
+      - "/opt/clion-2025.2/bin/cmake/linux/x64/share/cmake-4.0/Modules/FindThreads.cmake:163 (_threads_check_libc)"
+      - "CMakeLists.txt:9 (find_package)"
+    checks:
+      - "Performing Test CMAKE_HAVE_LIBC_PTHREAD"
+    directories:
+      source: "/home/mohammad/Desktop/the-tale-of-the-labyrinth/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-HRB7hq"
+      binary: "/home/mohammad/Desktop/the-tale-of-the-labyrinth/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-HRB7hq"
+    cmakeVariables:
+      CMAKE_C_FLAGS: ""
+      CMAKE_C_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "CMAKE_HAVE_LIBC_PTHREAD"
+      cached: true
+      stdout: |
+        Change Dir: '/home/mohammad/Desktop/the-tale-of-the-labyrinth/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-HRB7hq'
+        
+        Run Build Command(s): /opt/clion-2025.2/bin/ninja/linux/x64/ninja -v cmTC_78753
+        [1/2] /usr/bin/cc -DCMAKE_HAVE_LIBC_PTHREAD  -std=gnu99 -fdiagnostics-color=always -o CMakeFiles/cmTC_78753.dir/src.c.o -c /home/mohammad/Desktop/the-tale-of-the-labyrinth/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-HRB7hq/src.c
+        [2/2] : && /usr/bin/cc   CMakeFiles/cmTC_78753.dir/src.c.o -o cmTC_78753   && :
+        
+      exitCode: 0
+...
