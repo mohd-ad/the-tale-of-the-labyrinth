@@ -5,7 +5,8 @@ set(CMAKE_C_STANDARD 11)
 
 include_directories(../../Desktop)
 
-add_executable(the-tale-of-the-labyrinth main.c)
+add_executable(the-tale-of-the-labyrinth main.c
+        functions.c)
 
 set(RAYLIB_VERSION 5.5)
 find_package(raylib ${RAYLIB_VERSION} QUIET)
