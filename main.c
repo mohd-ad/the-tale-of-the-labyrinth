@@ -51,7 +51,7 @@ int main(void) {
     InitWindow(screenWidth, screenHeight, "TTOTL");
 
     // TODO: Load resources / Initialize variables at this point
-    Texture2D background = LoadTexture("assets/background.jpg");
+    Texture2D background = LoadTexture("background.jpg");
 
     SetTargetFPS(60);
     //--------------------------------------------------------------------------------------
