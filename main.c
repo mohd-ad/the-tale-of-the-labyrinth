@@ -90,7 +90,7 @@ int main(void) {
         for (int i = 0; i < n; i++) {
             for (int j = 0; j < m-1; j++) {
                 if (verticalWalls[i][j] == 1) {
-                    DrawRectangle(startMapV[0] + (BLOCK_SIZE * (j+1))-1, startMapV[1] + (BLOCK_SIZE * i) + 1, 4,
+                    DrawRectangle(startMapV[0] + (BLOCK_SIZE * (i+1))-1, startMapV[1] + (BLOCK_SIZE * j) + 1, 4,
                                   itemSize * 2 + 2, BLACK);
                 }
             }
@@ -98,7 +98,7 @@ int main(void) {
         for (int i = 0; i < n-1; i++) {
             for (int j = 0; j < m; j++) {
                 if (horizontalWalls[i][j] == 1) {
-                    DrawRectangle(startMapV[0] + (BLOCK_SIZE * j), startMapV[1] + (BLOCK_SIZE * (i+1)) -1, itemSize * 2 + 2,
+                    DrawRectangle(startMapV[0] + (BLOCK_SIZE * i), startMapV[1] + (BLOCK_SIZE * (j+1)) -1, itemSize * 2 + 2,
                                   4, BLACK);
                 }
             }
@@ -107,14 +107,14 @@ int main(void) {
             for (int j = 0; j < n; j++) {
                 char now = toupper(gameMap[i][j]);
                 if (now == 'H') {
-                    DrawRectangle(startMapV[0] + (BLOCK_SIZE * j) + 2, startMapV[1] + (BLOCK_SIZE * i) + 2,
+                    DrawRectangle(startMapV[0] + (BLOCK_SIZE * i) + 2, startMapV[1] + (BLOCK_SIZE * j) + 2,
                                   itemSize * 2 - 1, itemSize * 2 - 1, YELLOW);
                 } else if (now == 'P') {
-                    DrawCircle(startMapV[0] + (BLOCK_SIZE * j) + offset-1,
-                               startMapV[1] + (BLOCK_SIZE * i) + BLOCK_SIZE / 2, itemSize, RED);
+                    DrawCircle(startMapV[0] + (BLOCK_SIZE * i) + offset-1,
+                               startMapV[1] + (BLOCK_SIZE * j) + BLOCK_SIZE / 2, itemSize, RED);
                 } else if (now == 'S') {
-                    DrawCircle(startMapV[0] + (BLOCK_SIZE * j) + offset-1,
-                               startMapV[1] + (BLOCK_SIZE * i) + BLOCK_SIZE / 2, itemSize, BLUE);
+                    DrawCircle(startMapV[0] + (BLOCK_SIZE * i) + offset-1,
+                               startMapV[1] + (BLOCK_SIZE * j) + BLOCK_SIZE / 2, itemSize, BLUE);
                 }
             }
         }
