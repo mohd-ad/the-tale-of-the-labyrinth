@@ -40,7 +40,13 @@ int main(void) {
     }
 
     initializeGameMap(gameMap, m, n, verticalWalls, horizontalWalls);
+    InitAudioDevice();
 
+    Music music = LoadMusicStream("music.ogg");
+
+    PlayMusicStream(music);
+    float volume = 0.3f;
+    SetMusicVolume(music, volume);
 
     InitWindow(screenWidth, screenHeight, "TTOTL");
 
@@ -55,7 +61,7 @@ int main(void) {
     {
         // Update
         //----------------------------------------------------------------------------------
-        // TODO: Update variables / Implement example logic at this point
+        UpdateMusicStream(music);
         //----------------------------------------------------------------------------------
 
         // Draw
@@ -126,7 +132,8 @@ int main(void) {
     //--------------------------------------------------------------------------------------
 
     UnloadTexture(background);
-
+    UnloadMusicStream(music);
+    CloseAudioDevice();
     CloseWindow(); // Close window and OpenGL context
     //--------------------------------------------------------------------------------------
 
