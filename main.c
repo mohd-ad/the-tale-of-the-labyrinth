@@ -110,26 +110,19 @@ int main(void)
                               , WHITE);
             }
         }
-        for (int i = 0; i < n; i++)
-        {
-            for (int j = 0; j < m; j++)
-            {
-                if (verticalWalls[i][j] == 1)
-                {
-                    DrawRectangle(startMapV[0] + (BLOCK_SIZE * (i + 1)) - 2, startMapV[1] + (BLOCK_SIZE * j) + 1, 6,
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < m-1; j++) {
+                if (verticalWalls[i][j] == 1) {
+                    DrawRectangle(startMapV[0] + (BLOCK_SIZE * (j+1))-2, startMapV[1] + (BLOCK_SIZE * i) + 1, 5,
                                   itemSize * 2 + 2, BLACK);
                 }
             }
         }
-        for (int i = 0; i < n; i++)
-        {
-            for (int j = 0; j < m; j++)
-            {
-                if (horizontalWalls[i][j] == 1)
-                {
-                    DrawRectangle(startMapV[0] + (BLOCK_SIZE * i), startMapV[1] + (BLOCK_SIZE * (j + 1)) - 2,
-                                  itemSize * 2 + 2,
-                                  6, BLACK);
+        for (int i = 0; i < n-1; i++) {
+            for (int j = 0; j < m; j++) {
+                if (horizontalWalls[i][j] == 1) {
+                    DrawRectangle(startMapV[0] + (BLOCK_SIZE * j), startMapV[1] + (BLOCK_SIZE * (i+1)) -2, itemSize * 2 + 2,
+                                  5, BLACK);
                 }
             }
         }
@@ -138,20 +131,15 @@ int main(void)
             for (int j = 0; j < n; j++)
             {
                 char now = toupper(gameMap[i][j]);
-                if (now == 'H')
-                {
-                    DrawTexture(coreLight1, startMapV[0] + (BLOCK_SIZE * i) + 2, startMapV[1] + (BLOCK_SIZE * j) + 2
-                                , WHITE);
-                }
-                else if (now == 'P')
-                {
-                    DrawTexture(character, startMapV[0] + (BLOCK_SIZE * i) + 2, startMapV[1] + (BLOCK_SIZE * j) + 2,
-                                WHITE);
-                }
-                else if (now == 'S')
-                {
-                    DrawTexture(shady, startMapV[0] + (BLOCK_SIZE * i) + 2, startMapV[1] + (BLOCK_SIZE * j) + 2,
-                                WHITE);
+                if (now == 'H') {
+                    DrawRectangle(startMapV[0] + (BLOCK_SIZE * j) + 2, startMapV[1] + (BLOCK_SIZE * i) + 2,
+                                  itemSize * 2 - 1, itemSize * 2 - 1, YELLOW);
+                } else if (now == 'P') {
+                    DrawCircle(startMapV[0] + (BLOCK_SIZE * j) + offset-1,
+                               startMapV[1] + (BLOCK_SIZE * i) + BLOCK_SIZE / 2, itemSize, RED);
+                } else if (now == 'S') {
+                    DrawCircle(startMapV[0] + (BLOCK_SIZE * j) + offset-1,
+                               startMapV[1] + (BLOCK_SIZE * i) + BLOCK_SIZE / 2, itemSize, BLUE);
                 }
             }
         }
