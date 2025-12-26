@@ -1,6 +1,7 @@
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 #include "raylib.h"
 #include "functions.c"
 
@@ -9,7 +10,9 @@
 #define BLOCK_SIZE 60
 
 
-int main(void) {
+int main(void)
+{
+    srand(time(NULL));
     // Initialization
     //--------------------------------------------------------------------------------------
     int screenWidth = 1000;
@@ -20,7 +23,8 @@ int main(void) {
     int m, n;
     scanf("%d", &m);
     scanf("%d", &n);
-    if (m > MAX_SIZE || n > MAX_SIZE || m <= 3 || n <= 3) {
+    if (m > MAX_SIZE || n > MAX_SIZE || m <= 3 || n <= 3)
+    {
         printf("Error: Grid size must be between 3 and %d\n", MAX_SIZE);
         return -1;
     }
@@ -31,8 +35,10 @@ int main(void) {
     // Horizontals are m, n-1
     int horizontalWalls[MAX_SIZE][MAX_SIZE];
 
-    for (int i = 0; i < MAX_SIZE; i++) {
-        for (int j = 0; j < MAX_SIZE; j++) {
+    for (int i = 0; i < MAX_SIZE; i++)
+    {
+        for (int j = 0; j < MAX_SIZE; j++)
+        {
             gameMap[i][j] = '0';
             verticalWalls[i][j] = 0;
             horizontalWalls[i][j] = 0;
@@ -42,7 +48,7 @@ int main(void) {
     initializeGameMap(gameMap, m, n, verticalWalls, horizontalWalls);
     InitAudioDevice();
 
-    Music music = LoadMusicStream("music.ogg");
+    Music music = LoadMusicStream("music.mp3");
 
     PlayMusicStream(music);
     float volume = 0.3f;
@@ -52,13 +58,27 @@ int main(void) {
 
     // TODO: Load resources / Initialize variables at this point
     Texture2D background = LoadTexture("background.jpg");
+    Texture2D character = LoadTexture("character.png");
+    Texture2D shady = LoadTexture("shady.png");
+    Texture2D peace = LoadTexture("peace.png");
+    Texture2D peace2 = LoadTexture("peace2.png");
+    Texture2D vWall = LoadTexture("vWall.png");
+    Texture2D hWall = LoadTexture("hWall.png");
+
+
+    Texture2D coreLight1 = LoadTexture("core light-1.png");
+
+
+    Image icon = LoadImage("character.png");
+    SetWindowIcon(icon);
 
     SetTargetFPS(60);
     //--------------------------------------------------------------------------------------
-
+    int checkAnimation = 1;
     // Main game loop
     while (!WindowShouldClose()) // Detect window close button or ESC key
     {
+        checkAnimation *= -1;
         // Update
         //----------------------------------------------------------------------------------
         UpdateMusicStream(music);
@@ -68,23 +88,26 @@ int main(void) {
         //----------------------------------------------------------------------------------
         BeginDrawing();
 
-        ClearBackground(RAYWHITE);
+        ClearBackground(GRAY);
         DrawTexture(background, 0, 0, WHITE);
         // 40 * m = width
         // 40 * n = hegiht
         int aNumber = (screenWidth - BLOCK_SIZE * m) / 2;
         int firstPointUp[2] = {aNumber, (screenHeight - BLOCK_SIZE * n) / 2};
 
-        DrawRectangle(firstPointUp[0], firstPointUp[1], BLOCK_SIZE * m + 13, BLOCK_SIZE * n + 13, BLACK);
+        DrawRectangle(firstPointUp[0] - 7, firstPointUp[1] - 7, BLOCK_SIZE * m + 26, BLOCK_SIZE * n + 26, BLACK);
         DrawRectangle(firstPointUp[0] + 5, firstPointUp[1] + 5, BLOCK_SIZE * m + 2, BLOCK_SIZE * n + 2, GRAY);
 
 
         int startMapV[2] = {firstPointUp[0] + 5, firstPointUp[1] + 5};
 
-        for (int i = 0; i < m; i++) {
-            for (int j = 0; j < n; j++) {
+        for (int i = 0; i < m; i++)
+        {
+            for (int j = 0; j < n; j++)
+            {
                 DrawRectangle(startMapV[0] + (BLOCK_SIZE * i) + 2, startMapV[1] + (BLOCK_SIZE * j) + 2,
-                              itemSize * 2 - 1, itemSize * 2 - 1, WHITE);
+                              itemSize * 2 - 1, itemSize * 2 - 1
+                              , WHITE);
             }
         }
         for (int i = 0; i < n; i++) {
@@ -103,8 +126,10 @@ int main(void) {
                 }
             }
         }
-        for (int i = 0; i < m; i++) {
-            for (int j = 0; j < n; j++) {
+        for (int i = 0; i < m; i++)
+        {
+            for (int j = 0; j < n; j++)
+            {
                 char now = toupper(gameMap[i][j]);
                 if (now == 'H') {
                     DrawRectangle(startMapV[0] + (BLOCK_SIZE * j) + 2, startMapV[1] + (BLOCK_SIZE * i) + 2,
@@ -120,17 +145,19 @@ int main(void) {
         }
 
 
-
         EndDrawing();
 
-        if (IsKeyDown(KEY_UP)) {
+        if (IsKeyDown(KEY_UP))
+        {
         }
         //----------------------------------------------------------------------------------
     }
 
     // De-Initialization
     //--------------------------------------------------------------------------------------
-
+    UnloadTexture(character);
+    UnloadTexture(shady);
+    UnloadTexture(peace);
     UnloadTexture(background);
     UnloadMusicStream(music);
     CloseAudioDevice();
