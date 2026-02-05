@@ -145,16 +145,14 @@ int main(void) {
             for (int j = 0; j < n; j++) {
                 char now = toupper(gameMap[i][j]);
                 if (now == 'H') {
-                    DrawRectangle(startMapV[0] + (BLOCK_SIZE * i) + 2, startMapV[1] + (BLOCK_SIZE * j) + 2,
-                                  itemSize * 2 - 1, itemSize * 2 - 1, YELLOW);
+                    DrawTexture(coreLight1, startMapV[0] + (BLOCK_SIZE * i) + 2, startMapV[1] + (BLOCK_SIZE * j) + 2, WHITE);
                 } else if (now == 'P') {
                     pPosition[0] = i;
                     pPosition[1] = j;
-                    DrawCircle(startMapV[0] + (BLOCK_SIZE * pPosition[0]) + offset - 1,
-                               startMapV[1] + (BLOCK_SIZE * pPosition[1]) + BLOCK_SIZE / 2, itemSize, RED);
+                    DrawTexture(character, startMapV[0] + (BLOCK_SIZE * i) + 2, startMapV[1] + (BLOCK_SIZE * j) + 2, WHITE);
+
                 } else if (now == 'S') {
-                    DrawCircle(startMapV[0] + (BLOCK_SIZE * i) + offset - 1,
-                               startMapV[1] + (BLOCK_SIZE * j) + BLOCK_SIZE / 2, itemSize, BLUE);
+                    DrawTexture(shady, startMapV[0] + (BLOCK_SIZE * i) + 2, startMapV[1] + (BLOCK_SIZE * j) + 2, WHITE);
                 }
             }
         }
