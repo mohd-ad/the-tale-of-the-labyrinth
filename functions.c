@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #define MAX_SIZE 20
 
@@ -110,7 +111,8 @@ int initializeGameMap(char gameMap[MAX_SIZE][MAX_SIZE], int m, int n,
     }
 
     int surveyorCount;
-    scanf("%d", &surveyorCount);
+    // scanf("%d", &surveyorCount);
+    surveyorCount = 1;
     int surveyorLocations[surveyorCount][2];
 
     for (int i = 0; i < surveyorCount; i++)
@@ -139,7 +141,8 @@ int initializeGameMap(char gameMap[MAX_SIZE][MAX_SIZE], int m, int n,
     }
     int shadyCount;
 
-    scanf("%d", &shadyCount);
+    // scanf("%d", &shadyCount);
+    shadyCount = 1;
     int shadyLocations[shadyCount][2];
     for (int i = 0; i < shadyCount; i++)
     {
@@ -169,7 +172,6 @@ int initializeGameMap(char gameMap[MAX_SIZE][MAX_SIZE], int m, int n,
     int countWall;
 
     scanf("%d", &countWall);
-
     do
     {
         for (int i = 0; i < MAX_SIZE; i++)
@@ -226,6 +228,35 @@ int initializeGameMap(char gameMap[MAX_SIZE][MAX_SIZE], int m, int n,
     }
     while (checkWalls(m, n, verticalWalls, horizontalWalls));
 
+
+    return 0;
+}
+
+
+int checkWallAround(int m, int n,
+                    int verticalWalls[MAX_SIZE][MAX_SIZE],
+                    int horizontalWalls[MAX_SIZE][MAX_SIZE],
+                    int x, int y, char *side)
+{
+    if (strcmp(side, "UP") == 0) {
+        if (y - 1 < 0) return 1;
+        return horizontalWalls[x][y - 1] == 1;
+    }
+    else if (strcmp(side, "DOWN") == 0) {
+        if (y + 1 >= n) return 1;
+
+        return horizontalWalls[x][y] == 1;
+    }
+    else if (strcmp(side, "LEFT") == 0) {
+        if (x - 1 < 0) return 1;
+        return verticalWalls[x-1][y] == 1;
+
+    }
+    else if (strcmp(side, "RIGHT") == 0) {
+        if (x + 1 >= m) return 1;
+        return verticalWalls[x][y] == 1;
+
+    }
 
     return 0;
 }
