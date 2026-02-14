@@ -10,6 +10,21 @@
 #define MAX_SIZE 20
 #define BLOCK_SIZE 60
 
+struct TempWall {
+    int x;
+    int y;
+    int isVertical;
+    int lifeTime;
+};
+
+struct Player {
+    int x;
+    int y;
+    int id;
+    int active;
+    Color color;
+};
+
 
 int main(void) {
     srand(time(NULL));
@@ -61,6 +76,7 @@ int main(void) {
     Texture2D peace2 = LoadTexture("peace2.png");
     Texture2D vWall = LoadTexture("vWall.png");
     Texture2D hWall = LoadTexture("hWall.png");
+    Texture2D elec = LoadTexture("energy.png");
 
 
     Texture2D coreLight1 = LoadTexture("core light-1.png");
@@ -73,16 +89,48 @@ int main(void) {
     //--------------------------------------------------------------------------------------
     int checkAnimation = 1;
     int yourTurn = 1;
+    int buildTurn = 0;
     float turnTimer = 0.0f;
     float turnDelayDuration = 0.5f;
     int aNumber = (screenWidth - BLOCK_SIZE * m) / 2;
     int gameOver = 0;
     char endMessage[50] = "";
     int firstPointUp[2] = {aNumber, (screenHeight - BLOCK_SIZE * n) / 2};
+    int energy = max(min(n, m) / 3, 1);
+    struct TempWall tempWalls[energy];
+    int tempWallCount = 0;
+
+    struct Player players[10];
+    int playerCount = 0;
+    Color classicPieceColors[10] = {
+        RED,
+        BLUE,
+        GREEN,
+        YELLOW,
+        MAGENTA,
+        ORANGE,
+        SKYBLUE,
+        PURPLE,
+        PINK,
+        LIME
+    };
+    for (int j = 0; j < n; j++) {
+        for (int i = 0; i < m; i++) {
+            if (gameMap[i][j] > '0' && gameMap[i][j] < '9') {
+                players[playerCount].x = i;
+                players[playerCount].y = j;
+                players[playerCount].id = gameMap[i][j] + 48;
+                players[playerCount].color = classicPieceColors[playerCount];
+                players[playerCount].active = 1;
+                playerCount++;
+            }
+        }
+    }
 
     int startMapV[2] = {firstPointUp[0] + 5, firstPointUp[1] + 5};
 
     int pPosition[2] = {0, 0};
+    int currentPlayerTurn = 0;
     char message[200];
 
 
@@ -103,7 +151,9 @@ int main(void) {
         DrawTexture(background, 0, 0, WHITE);
         // 40 * m = width
         // 40 * n = hegiht
-
+        for (int i = 0; i < energy; ++i) {
+            DrawTexture(elec, 30 + (i * 40), 30, WHITE);
+        }
 
         DrawRectangle(firstPointUp[0] - 7, firstPointUp[1] - 7, BLOCK_SIZE * m + 26, BLOCK_SIZE * n + 26, BLACK);
         DrawRectangle(firstPointUp[0] + 5, firstPointUp[1] + 5, BLOCK_SIZE * m + 2, BLOCK_SIZE * n + 2, GRAY);
@@ -123,7 +173,7 @@ int main(void) {
                                   itemSize * 2 + 2, BLACK);
                 } else if (verticalWalls[i][j] == 2) {
                     DrawRectangle(startMapV[0] + (BLOCK_SIZE * (i + 1)) - 2, startMapV[1] + (BLOCK_SIZE * j) + 1, 5,
-                                  itemSize * 2 + 2, GREEN);
+                                  itemSize * 2 + 2, BLUE);
                 }
             }
         }
@@ -137,41 +187,45 @@ int main(void) {
                 } else if (horizontalWalls[i][j] == 2) {
                     DrawRectangle(startMapV[0] + (BLOCK_SIZE * i), startMapV[1] + (BLOCK_SIZE * (j + 1)) - 2,
                                   itemSize * 2 + 2,
-                                  5, GREEN);
+                                  5, BLUE);
                 }
             }
         }
         for (int i = 0; i < m; i++) {
             for (int j = 0; j < n; j++) {
                 char now = toupper(gameMap[i][j]);
-                if (now == 'H') {
-                    DrawTexture(coreLight1, startMapV[0] + (BLOCK_SIZE * i) + 2, startMapV[1] + (BLOCK_SIZE * j) + 2, WHITE);
-                } else if (now == 'P') {
-                    pPosition[0] = i;
-                    pPosition[1] = j;
-                    DrawTexture(character, startMapV[0] + (BLOCK_SIZE * i) + 2, startMapV[1] + (BLOCK_SIZE * j) + 2, WHITE);
+                int noww = atoi(&now);
 
+                if (now == 'H') {
+                    DrawTexture(coreLight1, startMapV[0] + (BLOCK_SIZE * i) + 2, startMapV[1] + (BLOCK_SIZE * j) + 2,
+                                WHITE);
+                } else if (noww > 0) {
+                    pPosition[0] = players[currentPlayerTurn].x;
+                    pPosition[1] = players[currentPlayerTurn].y;
+                    DrawTexture(character, startMapV[0] + (BLOCK_SIZE * i) + 2, startMapV[1] + (BLOCK_SIZE * j) + 2,
+                                players[noww - 1].color);
                 } else if (now == 'S') {
                     DrawTexture(shady, startMapV[0] + (BLOCK_SIZE * i) + 2, startMapV[1] + (BLOCK_SIZE * j) + 2, WHITE);
                 }
             }
         }
-
-        if (yourTurn && strcmp(message, "You can't go there!") == 0) {
+        if (buildTurn) {
+            DrawText("Press arrow keyboard buttons\nTo create a temporary wall.", 270, 700, 36, RED);
+        } else if (yourTurn && strcmp(message, "You can't go there!") == 0) {
             DrawText(message, 430, 700, 36, RED);
         } else if (yourTurn) {
             DrawText("Your turn!\nPress SPACE for skip your turn.", 330, 700, 36, WHITE);
         } else {
             DrawText("Wait ...", 430, 700, 36, RED);
         }
+
         int surveyorCountOnMap = 0;
-        int surveyorOnCoreLight = 0;
-        int shadyOnSurveyor = 0;
 
         for (int i = 0; i < m; i++) {
             for (int j = 0; j < n; j++) {
-                char cell = toupper(gameMap[i][j]);
-                if (cell == 'P') surveyorCountOnMap++;
+                if (gameMap[i][j] >= '1' && gameMap[i][j] <= '9') {
+                    surveyorCountOnMap++;
+                }
             }
         }
 
@@ -184,86 +238,215 @@ int main(void) {
             DrawText(endMessage, screenWidth / 2 - MeasureText(endMessage, 40) / 2, screenHeight / 2, 40,
                      (gameOver == 2) ? GREEN : RED);
             DrawText("Press ESC to Exit", screenWidth / 2 - MeasureText("Press ESC to Exit", 20) / 2,
-                     screenHeight / 2 + 60, 20, WHITE);
+                     screenHeight / 2 + 80, 20, WHITE);
 
+            if (IsKeyPressed(KEY_C)) {
+                gameOver = 0;
+            }
             yourTurn = 0;
         }
+        char topMessage[50];
+        snprintf(topMessage, 18, "Player %d'st turn", currentPlayerTurn + 1);
+        DrawRectangle(screenWidth / 2 - MeasureText("Player %d'st turn", 20) / 2, 100,
+                      MeasureText("Player %d'st turn", 30), 40, WHITE);
+        DrawText(topMessage, screenWidth / 2 - MeasureText("Player %d'st turn", 20) / 2,
+                 100, 30, players[currentPlayerTurn].color);
 
         EndDrawing();
 
-        if ((IsKeyDown(KEY_W) || IsKeyDown(KEY_UP)) && yourTurn) {
-            if (checkWallAround(m, n, verticalWalls, horizontalWalls, pPosition[0], pPosition[1], "UP")) {
-                strcpy(message, "You can't go there!");
-            } else {
-                if (gameMap[pPosition[0]][pPosition[1] - 1] == 'H') {
-                    gameOver = 2;
-                    strcpy(endMessage, "YOU WIN! Reached Core Light.");
-                } else if (gameMap[pPosition[0]][pPosition[1] - 1] == 'S') {
-                    gameOver = 1;
-                    strcpy(endMessage, "GAME OVER! Do you want to eat shady?");
-                }
-                gameMap[pPosition[0]][pPosition[1]] = '0';
-                pPosition[1]--;
-                gameMap[pPosition[0]][pPosition[1]] = 'P';
-                yourTurn = 0;
-            }
-            turnTimer = turnDelayDuration;
-        } else if ((IsKeyDown(KEY_S) || IsKeyDown(KEY_DOWN)) && yourTurn) {
-            if (checkWallAround(m, n, verticalWalls, horizontalWalls, pPosition[0], pPosition[1], "DOWN")) {
-                strcpy(message, "You can't go there!");
-            } else {
-                if (gameMap[pPosition[0]][pPosition[1] + 1] == 'H') {
-                    gameOver = 2;
-                    strcpy(endMessage, "YOU WIN! Reached Core Light.");
-                } else if (gameMap[pPosition[0]][pPosition[1] + 1] == 'S') {
-                    gameOver = 1;
-                    strcpy(endMessage, "GAME OVER! Do you want to eat shady?");
-                }
-                gameMap[pPosition[0]][pPosition[1]] = '0';
-                pPosition[1]++;
-                gameMap[pPosition[0]][pPosition[1]] = 'P';
-                yourTurn = 0;
-            }
-            turnTimer = turnDelayDuration;
-        } else if ((IsKeyDown(KEY_A) || IsKeyDown(KEY_LEFT)) && yourTurn) {
-            if (checkWallAround(m, n, verticalWalls, horizontalWalls, pPosition[0], pPosition[1], "LEFT")) {
-                strcpy(message, "You can't go there!");
-            } else {
-                if (gameMap[pPosition[0] - 1][pPosition[1]] == 'H') {
-                    gameOver = 2;
-                    strcpy(endMessage, "YOU WIN! Reached Core Light.");
-                } else if (gameMap[pPosition[0] - 1][pPosition[1]] == 'S') {
-                    gameOver = 1;
-                    strcpy(endMessage, "GAME OVER! Do you want to eat shady?");
-                }
-                gameMap[pPosition[0]][pPosition[1]] = '0';
-                pPosition[0]--;
-                gameMap[pPosition[0]][pPosition[1]] = 'P';
-                yourTurn = 0;
-            }
-            turnTimer = turnDelayDuration;
-        } else if ((IsKeyDown(KEY_D) || IsKeyDown(KEY_RIGHT)) && yourTurn) {
-            if (checkWallAround(m, n, verticalWalls, horizontalWalls, pPosition[0], pPosition[1], "RIGHT")) {
-                strcpy(message, "You can't go there!");
-            } else {
-                if (gameMap[pPosition[0] + 1][pPosition[1]] == 'H') {
-                    gameOver = 2;
-                    strcpy(endMessage, "YOU WIN! Reached Core Light.");
-                } else if (gameMap[pPosition[0] + 1][pPosition[1]] == 'S') {
-                    gameOver = 1;
-                    strcpy(endMessage, "GAME OVER! Do you want to eat shady?");
-                }
-                gameMap[pPosition[0]][pPosition[1]] = '0';
-                pPosition[0]++;
-                gameMap[pPosition[0]][pPosition[1]] = 'P';
-                yourTurn = 0;
-            }
-            turnTimer = turnDelayDuration;
-        } else if (IsKeyPressed(KEY_SPACE)) {
-            yourTurn = 0;
-            turnTimer = turnDelayDuration;
-        }
+        if (!buildTurn) {
+            if ((IsKeyPressed(KEY_W) || IsKeyPressed(KEY_UP)) && yourTurn) {
+                if (checkWallAround(m, n, verticalWalls, horizontalWalls, pPosition[0], pPosition[1], "UP")) {
+                    strcpy(message, "You can't go there!");
+                } else {
+                    if (gameMap[pPosition[0]][pPosition[1] - 1] == 'H') {
+                        gameOver = 2;
+                        strcpy(endMessage, "YOU WIN! Reached Core Light.");
+                    } else if (gameMap[pPosition[0]][pPosition[1] - 1] == 'S') {
+                        gameOver = 1;
+                        strcpy(endMessage, "GAME OVER! Do you want to eat shady?");
+                    }
+                    int now = gameMap[pPosition[0]][pPosition[1]];
 
+                    gameMap[pPosition[0]][pPosition[1]] = '0';
+                    pPosition[1]--;
+                    gameMap[pPosition[0]][pPosition[1]] = now;
+                    yourTurn = 0;
+                    players[currentPlayerTurn].x = pPosition[0];
+                    players[currentPlayerTurn].y = pPosition[1];
+                    if (playerCount > 1) currentPlayerTurn++;
+                    for (int i = 0; i < tempWallCount; i++) {
+                        tempWalls[i].lifeTime--;
+                    }
+                }
+                turnTimer = turnDelayDuration;
+            } else if ((IsKeyPressed(KEY_S) || IsKeyPressed(KEY_DOWN)) && yourTurn) {
+                if (checkWallAround(m, n, verticalWalls, horizontalWalls, pPosition[0], pPosition[1], "DOWN")) {
+                    strcpy(message, "You can't go there!");
+                } else {
+                    if (gameMap[pPosition[0]][pPosition[1] + 1] == 'H') {
+                        gameOver = 2;
+                        strcpy(endMessage, "YOU WIN! Reached Core Light.");
+                    } else if (gameMap[pPosition[0]][pPosition[1] + 1] == 'S') {
+                        gameOver = 1;
+                        strcpy(endMessage, "GAME OVER! Do you want to eat shady?");
+                    }
+                    int now = gameMap[pPosition[0]][pPosition[1]];
+                    gameMap[pPosition[0]][pPosition[1]] = '0';
+                    pPosition[1]++;
+                    gameMap[pPosition[0]][pPosition[1]] = now;
+                    yourTurn = 0;
+                    players[currentPlayerTurn].x = pPosition[0];
+                    players[currentPlayerTurn].y = pPosition[1];
+                    if (playerCount > 1) currentPlayerTurn++;
+                    for (int i = 0; i < tempWallCount; i++) {
+                        tempWalls[i].lifeTime--;
+                    }
+                }
+                turnTimer = turnDelayDuration;
+            } else if ((IsKeyPressed(KEY_A) || IsKeyPressed(KEY_LEFT)) && yourTurn) {
+                if (checkWallAround(m, n, verticalWalls, horizontalWalls, pPosition[0], pPosition[1], "LEFT")) {
+                    strcpy(message, "You can't go there!");
+                } else {
+                    if (gameMap[pPosition[0] - 1][pPosition[1]] == 'H') {
+                        gameOver = 2;
+                        strcpy(endMessage, "YOU WIN! Reached Core Light.");
+                    } else if (gameMap[pPosition[0] - 1][pPosition[1]] == 'S') {
+                        gameOver = 1;
+                        strcpy(endMessage, "GAME OVER! Do you want to eat shady?");
+                    }
+                    int now = gameMap[pPosition[0]][pPosition[1]];
+                    gameMap[pPosition[0]][pPosition[1]] = '0';
+                    pPosition[0]--;
+                    gameMap[pPosition[0]][pPosition[1]] = now;
+                    yourTurn = 0;
+                    players[currentPlayerTurn].x = pPosition[0];
+                    players[currentPlayerTurn].y = pPosition[1];
+                    if (playerCount > 1) currentPlayerTurn++;
+                    for (int i = 0; i < tempWallCount; i++) {
+                        tempWalls[i].lifeTime--;
+                    }
+                }
+                turnTimer = turnDelayDuration;
+            } else if ((IsKeyPressed(KEY_D) || IsKeyPressed(KEY_RIGHT)) && yourTurn) {
+                if (checkWallAround(m, n, verticalWalls, horizontalWalls, pPosition[0], pPosition[1], "RIGHT")) {
+                    strcpy(message, "You can't go there!");
+                } else {
+                    if (gameMap[pPosition[0] + 1][pPosition[1]] == 'H') {
+                        gameOver = 2;
+                        strcpy(endMessage, "YOU WIN! Reached Core Light.");
+                    } else if (gameMap[pPosition[0] + 1][pPosition[1]] == 'S') {
+                        gameOver = 1;
+                        strcpy(endMessage, "GAME OVER! Do you want to eat shady?");
+                    }
+                    int now = gameMap[pPosition[0]][pPosition[1]];
+
+                    gameMap[pPosition[0]][pPosition[1]] = '0';
+                    pPosition[0]++;
+                    gameMap[pPosition[0]][pPosition[1]] = now;
+                    yourTurn = 0;
+                    players[currentPlayerTurn].x = pPosition[0];
+                    players[currentPlayerTurn].y = pPosition[1];
+                    if (playerCount > 1) currentPlayerTurn++;
+                    for (int i = 0; i < tempWallCount; i++) {
+                        tempWalls[i].lifeTime--;
+                    }
+                }
+                turnTimer = turnDelayDuration;
+            } else if (IsKeyPressed(KEY_SPACE)) {
+                yourTurn = 0;
+                if (playerCount > 1) currentPlayerTurn++;
+                for (int i = 0; i < tempWallCount; i++) {
+                    tempWalls[i].lifeTime--;
+                }
+                turnTimer = turnDelayDuration;
+            } else if (IsKeyPressed(KEY_F) && yourTurn) {
+                if (energy > 0) {
+                    buildTurn = 1;
+                }
+            }
+        } else {
+            if ((IsKeyPressed(KEY_W) || IsKeyPressed(KEY_UP)) && yourTurn) {
+                if (checkWallAround(m, n, verticalWalls, horizontalWalls, pPosition[0], pPosition[1], "UP")) {
+                    strcpy(message, "You can't place there!");
+                } else {
+                    buildTurn = 0;
+                    horizontalWalls[pPosition[0]][pPosition[1] - 1] = 2;
+                    tempWalls[tempWallCount].x = pPosition[0];
+                    tempWalls[tempWallCount].y = pPosition[1] - 1;
+                    tempWalls[tempWallCount].isVertical = 0;
+                    tempWalls[tempWallCount].lifeTime = 2;
+                    tempWallCount++;
+
+                    energy--;
+                    yourTurn = 0;
+                    if (playerCount > 1) currentPlayerTurn++;
+                }
+                turnTimer = turnDelayDuration;
+            } else if ((IsKeyPressed(KEY_S) || IsKeyPressed(KEY_DOWN)) && yourTurn) {
+                if (checkWallAround(m, n, verticalWalls, horizontalWalls, pPosition[0], pPosition[1], "DOWN")) {
+                    strcpy(message, "You can't place there!");
+                } else {
+                    buildTurn = 0;
+                    horizontalWalls[pPosition[0]][pPosition[1]] = 2;
+
+                    tempWalls[tempWallCount].x = pPosition[0];
+                    tempWalls[tempWallCount].y = pPosition[1];
+                    tempWalls[tempWallCount].isVertical = 0;
+                    tempWalls[tempWallCount].lifeTime = 2;
+                    tempWallCount++;
+                    energy--;
+                    yourTurn = 0;
+                    if (playerCount > 1) currentPlayerTurn++;
+                }
+                turnTimer = turnDelayDuration;
+            } else if ((IsKeyPressed(KEY_A) || IsKeyPressed(KEY_LEFT)) && yourTurn) {
+                if (checkWallAround(m, n, verticalWalls, horizontalWalls, pPosition[0], pPosition[1], "LEFT")) {
+                    strcpy(message, "You can't place there!");
+                } else {
+                    buildTurn = 0;
+                    verticalWalls[pPosition[0] - 1][pPosition[1]] = 2;
+                    tempWalls[tempWallCount].x = pPosition[0] - 1;
+                    tempWalls[tempWallCount].y = pPosition[1];
+                    tempWalls[tempWallCount].isVertical = 1;
+                    tempWalls[tempWallCount].lifeTime = 2;
+                    tempWallCount++;
+
+                    energy--;
+                    yourTurn = 0;
+                    if (playerCount > 1) currentPlayerTurn++;
+                }
+                turnTimer = turnDelayDuration;
+            } else if ((IsKeyPressed(KEY_D) || IsKeyPressed(KEY_RIGHT)) && yourTurn) {
+                if (checkWallAround(m, n, verticalWalls, horizontalWalls, pPosition[0], pPosition[1], "RIGHT")) {
+                    strcpy(message, "You can't place there!");
+                } else {
+                    buildTurn = 0;
+                    verticalWalls[pPosition[0]][pPosition[1]] = 2;
+                    tempWalls[tempWallCount].x = pPosition[0];
+                    tempWalls[tempWallCount].y = pPosition[1];
+                    tempWalls[tempWallCount].isVertical = 1;
+                    tempWalls[tempWallCount].lifeTime = 2;
+                    tempWallCount++;
+
+                    energy--;
+                    yourTurn = 0;
+                    if (playerCount > 1) currentPlayerTurn++;
+                }
+                turnTimer = turnDelayDuration;
+            } else if (IsKeyPressed(KEY_SPACE)) {
+                yourTurn = 0;
+                if (playerCount > 1) currentPlayerTurn++;
+                buildTurn = 0;
+                for (int i = 0; i < tempWallCount; i++) {
+                    tempWalls[i].lifeTime--;
+                }
+                turnTimer = turnDelayDuration;
+            } else if (IsKeyPressed(KEY_E)) {
+                buildTurn = 0;
+                turnTimer = turnDelayDuration;
+            }
+        }
 
         if (!yourTurn && gameOver != 2) {
             if (turnTimer > 0) {
@@ -286,42 +469,67 @@ int main(void) {
                     int sx = shadyPositions[k][0];
                     int sy = shadyPositions[k][1];
 
-                    int nextX = sx;
-                    if (pPosition[0] > sx) nextX = sx + 1;
-                    else if (pPosition[0] < sx) nextX = sx - 1;
+                    int closestPlayerIdx = -1;
+                    int minDistance = m + n + 100;
 
-                    if (nextX != sx) {
-                        char target = gameMap[nextX][sy];
-                        if (!checkWallAround(m, n, verticalWalls, horizontalWalls, sx, sy,
-                                             (nextX > sx ? "RIGHT" : "LEFT"))) {
-                            if (target == '0' || target == 'P') {
-                                gameMap[sx][sy] = '0';
-                                if (target == 'P') {
-                                    gameOver = 1;
-                                    strcpy(endMessage, "GAME OVER! Shady caught a surveyor.");
-                                }
-                                sx = nextX;
-                                gameMap[sx][sy] = 'S';
+                    for (int p = 0; p < playerCount; p++) {
+                        int px = players[p].x;
+                        int py = players[p].y;
+
+                        if (gameMap[px][py] >= '1' && gameMap[px][py] <= '9') {
+                            int distance = abs(px - sx) + abs(py - sy);
+                            if (distance < minDistance) {
+                                minDistance = distance;
+                                closestPlayerIdx = p;
                             }
                         }
                     }
 
-                    int nextY = sy;
-                    if (pPosition[1] > sy) nextY = sy + 1;
-                    else if (pPosition[1] < sy) nextY = sy - 1;
+                    if (closestPlayerIdx != -1) {
+                        int targetX = players[closestPlayerIdx].x;
+                        int targetY = players[closestPlayerIdx].y;
 
-                    if (nextY != sy && gameOver == 0) {
-                        char target = gameMap[sx][nextY];
-                        if (!checkWallAround(m, n, verticalWalls, horizontalWalls, sx, sy,
-                                             (nextY > sy ? "DOWN" : "UP"))) {
-                            if (target == '0' || target == 'P') {
-                                gameMap[sx][sy] = '0';
-                                if (target == 'P') {
-                                    gameOver = 1;
-                                    strcpy(endMessage, "GAME OVER! Shady caught a surveyor.");
+                        int nextX = sx;
+                        if (targetX > sx) nextX = sx + 1;
+                        else if (targetX < sx) nextX = sx - 1;
+
+                        if (nextX != sx) {
+                            char target = gameMap[nextX][sy];
+                            if (!checkWallAround(m, n, verticalWalls, horizontalWalls, sx, sy,
+                                                 (nextX > sx ? "RIGHT" : "LEFT"))) {
+                                if (target == '0' || (target >= '1' && target <= '9')) {
+                                    gameMap[sx][sy] = '0';
+                                    if (target >= '1' && target <= '9') {
+                                        gameOver = 1;
+                                        strcpy(endMessage, "GAME OVER! Shady caught a surveyor.\nDo you want to continue?(C)");
+                                        playerCount--;
+                                    }
+                                    sx = nextX;
+                                    gameMap[sx][sy] = 'S';
                                 }
-                                sy = nextY;
-                                gameMap[sx][sy] = 'S';
+                            }
+                        }
+
+                        int nextY = sy;
+                        if (targetY > sy) nextY = sy + 1;
+                        else if (targetY < sy) nextY = sy - 1;
+
+                        if (nextY != sy && gameOver == 0) {
+                            char target = gameMap[sx][nextY];
+
+                            if (!checkWallAround(m, n, verticalWalls, horizontalWalls, sx, sy,
+                                                 (nextY > sy ? "DOWN" : "UP"))) {
+                                if (target == '0' || (target >= '1' && target <= '9')) {
+                                    gameMap[sx][sy] = '0';
+                                    if (target >= '1' && target <= '9') {
+                                        gameOver = 1;
+                                        strcpy(endMessage, "GAME OVER! Shady caught a surveyor.\nDo you want to continue?(C)");
+                                        playerCount--;
+
+                                    }
+                                    sy = nextY;
+                                    gameMap[sx][sy] = 'S';
+                                }
                             }
                         }
                     }
@@ -330,7 +538,19 @@ int main(void) {
                 turnTimer = 0;
             }
         }
+        for (int i = 0; i < tempWallCount; i++) {
+            if (tempWalls[i].lifeTime == 0) {
+                if (tempWalls[i].isVertical) {
+                    verticalWalls[tempWalls[i].x][tempWalls[i].y] = 0;
+                } else {
+                    horizontalWalls[tempWalls[i].x][tempWalls[i].y] = 0;
+                }
+            }
+        }
         //----------------------------------------------------------------------------------
+        if (currentPlayerTurn >= playerCount) {
+            currentPlayerTurn = 0;
+        }
     }
 
     // De-Initialization
@@ -340,6 +560,7 @@ int main(void) {
     UnloadTexture(peace);
     UnloadTexture(background);
     UnloadMusicStream(music);
+    UnloadTexture(elec);
     CloseAudioDevice();
     CloseWindow(); // Close window and OpenGL context
     //--------------------------------------------------------------------------------------
