@@ -239,3 +239,140 @@ int max(int x, int y) {
 int min(int x, int y) {
     return x > y ? y : x;
 }
+
+int luckyExtraTurn() {
+    return 1;
+}
+
+int luckyAddWalls(int *energy) {
+    *energy += 2;
+    return 1;
+}
+
+int luckyEarthquake(char gameMap[MAX_SIZE][MAX_SIZE], int m, int n,
+                     int verticalWalls[MAX_SIZE][MAX_SIZE],
+                     int horizontalWalls[MAX_SIZE][MAX_SIZE]) {
+    for (int i = 0; i < m; i++) {
+        for (int j = 0; j < n; j++) {
+            if (gameMap[i][j] >= '1' && gameMap[i][j] <= '9') {
+                int currentX = i;
+                int currentY = j;
+
+                int directions[4][2] = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};
+                int validMoves[4][2];
+                int validCount = 0;
+
+                for (int d = 0; d < 4; d++) {
+                    int newX = currentX + directions[d][0];
+                    int newY = currentY + directions[d][1];
+
+                    if (newX >= 0 && newX < m && newY >= 0 && newY < n &&
+                        canMove(currentX, currentY, newX, newY, m, n, verticalWalls, horizontalWalls)) {
+                        validMoves[validCount][0] = newX;
+                        validMoves[validCount][1] = newY;
+                        validCount++;
+                    }
+                }
+
+                if (validCount > 0) {
+                    int randomIndex = cRand(0, validCount - 1);
+                    int newX = validMoves[randomIndex][0];
+                    int newY = validMoves[randomIndex][1];
+
+                    char playerChar = gameMap[currentX][currentY];
+                    char temp = gameMap[newX][newY];
+                    gameMap[currentX][currentY] = (temp == '0' || temp == 'G') ? '0' : temp;
+                    gameMap[newX][newY] = playerChar;
+                }
+            }
+        }
+    }
+
+    for (int i = 0; i < m; i++) {
+        for (int j = 0; j < n; j++) {
+            if (gameMap[i][j] == 'S') {
+                int directions[4][2] = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};
+                int validMoves[4][2];
+                int validCount = 0;
+
+                for (int d = 0; d < 4; d++) {
+                    int newX = i + directions[d][0];
+                    int newY = j + directions[d][1];
+
+                    if (newX >= 0 && newX < m && newY >= 0 && newY < n &&
+                        canMove(i, j, newX, newY, m, n, verticalWalls, horizontalWalls)) {
+                        validMoves[validCount][0] = newX;
+                        validMoves[validCount][1] = newY;
+                        validCount++;
+                    }
+                }
+
+                if (validCount > 0) {
+                    int randomIndex = cRand(0, validCount - 1);
+                    int newX = validMoves[randomIndex][0];
+                    int newY = validMoves[randomIndex][1];
+
+                    char temp = gameMap[newX][newY];
+                    gameMap[i][j] = (temp == '0' || temp == 'G') ? '0' : temp;
+                    gameMap[newX][newY] = 'S';
+                }
+            }
+        }
+    }
+
+    return 1;
+}
+
+int luckyMoveShadow(char gameMap[MAX_SIZE][MAX_SIZE], int m, int n,
+                     int verticalWalls[MAX_SIZE][MAX_SIZE],
+                     int horizontalWalls[MAX_SIZE][MAX_SIZE],
+                     int selectedShadowIndex) {
+    int shadyPositions[MAX_SIZE * MAX_SIZE][2];
+    int shadyCount = 0;
+
+    for (int i = 0; i < m; i++) {
+        for (int j = 0; j < n; j++) {
+            if (gameMap[i][j] == 'S') {
+                shadyPositions[shadyCount][0] = i;
+                shadyPositions[shadyCount][1] = j;
+                shadyCount++;
+            }
+        }
+    }
+
+    if (selectedShadowIndex < 0 || selectedShadowIndex >= shadyCount) {
+        return 0;
+    }
+
+    int shadowX = shadyPositions[selectedShadowIndex][0];
+    int shadowY = shadyPositions[selectedShadowIndex][1];
+
+    int directions[4][2] = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};
+    int validMoves[4][2];
+    int validCount = 0;
+
+    for (int d = 0; d < 4; d++) {
+        int newX = shadowX + directions[d][0];
+        int newY = shadowY + directions[d][1];
+
+        if (newX >= 0 && newX < m && newY >= 0 && newY < n &&
+            canMove(shadowX, shadowY, newX, newY, m, n, verticalWalls, horizontalWalls)) {
+            validMoves[validCount][0] = newX;
+            validMoves[validCount][1] = newY;
+            validCount++;
+        }
+    }
+
+    if (validCount > 0) {
+        int randomIndex = cRand(0, validCount - 1);
+        int newX = validMoves[randomIndex][0];
+        int newY = validMoves[randomIndex][1];
+
+        char temp = gameMap[newX][newY];
+        gameMap[shadowX][shadowY] = temp == '0' || temp == 'G' ? '0' : temp;
+        gameMap[newX][newY] = 'S';
+        return 1;
+    }
+
+    return 0;
+}

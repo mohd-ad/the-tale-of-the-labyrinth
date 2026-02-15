@@ -61,9 +61,14 @@ int main(void) {
     InitAudioDevice();
 
     Music music = LoadMusicStream("music.mp3");
+    Sound victorySound = LoadSound("victory.mp3");
+    Sound takeTwoEnergySound = LoadSound("take_two_energy.mp3");
+    Sound moveShadySound = LoadSound("move_shady.mp3");
+    Sound gettingLuckySound = LoadSound("getting_lucky.mp3");
+    Sound earthquakeSound = LoadSound("earthquake_sound.mp3");
 
     PlayMusicStream(music);
-    float volume = 0.3f;
+    float volume = 0.06f;
     SetMusicVolume(music, volume);
 
     InitWindow(screenWidth, screenHeight, "TTOTL");
@@ -101,6 +106,10 @@ int main(void) {
     int energy = max(min(n, m) / 3, 1);
     struct TempWall tempWalls[energy];
     int tempWallCount = 0;
+
+    char luckyMessage[100] = "";
+    float luckyMessageTimer = 0.0f;
+    float luckyMessageDuration = 3.0f;
 
     struct Player players[10];
     int playerCount = 0;
@@ -283,6 +292,13 @@ int main(void) {
         DrawText(topMessage, screenWidth / 2 - MeasureText("Player %d'st turn", 20) / 2,
                  100, 30, players[currentPlayerTurn].color);
 
+        if (luckyMessageTimer > 0) {
+            luckyMessageTimer -= GetFrameTime();
+            DrawRectangle(screenWidth / 2 - MeasureText(luckyMessage, 30) / 2 - 10, 20,
+                          MeasureText(luckyMessage, 30) + 20, 50, Fade(GOLD, 0.9f));
+            DrawText(luckyMessage, screenWidth / 2 - MeasureText(luckyMessage, 30) / 2, 30, 30, BLACK);
+        }
+
         EndDrawing();
 
         if (!buildTurn) {
@@ -290,24 +306,74 @@ int main(void) {
                 if (checkWallAround(m, n, verticalWalls, horizontalWalls, pPosition[0], pPosition[1], "UP")) {
                     strcpy(message, "You can't go there!");
                 } else {
-                    if (gameMap[pPosition[0]][pPosition[1] - 1] == 'H') {
+                    int extraTurn = 0;
+                    char targetCell = gameMap[pPosition[0]][pPosition[1] - 1];
+
+                    if (targetCell == 'H') {
                         gameOver = 2;
+                        PlaySound(victorySound);
                         strcpy(endMessage, "YOU WIN! Reached Core Light.");
-                    } else if (gameMap[pPosition[0]][pPosition[1] - 1] == 'S') {
+                    } else if (targetCell == 'S') {
                         gameOver = 1;
                         strcpy(endMessage, "GAME OVER! Do you want to eat shady?\nPress C to continue");
+                    } else if (targetCell == 'G') {
+                        int luckyEvent = cRand(1, 4);
+                        PlaySound(gettingLuckySound);
+                        if (luckyEvent == 1) {
+                            extraTurn = 1;
+                            strcpy(luckyMessage, "Extra Turn!");
+                            luckyMessageTimer = luckyMessageDuration;
+                        } else if (luckyEvent == 2) {
+                            luckyAddWalls(&energy);
+                            PlaySound(takeTwoEnergySound);
+                            strcpy(luckyMessage, "+2 Energy!");
+                            luckyMessageTimer = luckyMessageDuration;
+                        } else if (luckyEvent == 3) {
+                            luckyEarthquake(gameMap, m, n, verticalWalls, horizontalWalls);
+                            PlaySound(earthquakeSound);
+                            strcpy(luckyMessage, "Earthquake! All moved!");
+                            luckyMessageTimer = luckyMessageDuration;
+                            for (int p = 0; p < playerCount; p++) {
+                                if (players[p].active == 0) continue;
+                                for (int i = 0; i < m; i++) {
+                                    for (int j = 0; j < n; j++) {
+                                        if (gameMap[i][j] == '0' + players[p].id) {
+                                            players[p].x = i;
+                                            players[p].y = j;
+                                        }
+                                    }
+                                }
+                            }
+                        } else if (luckyEvent == 4) {
+                            int shadyCount = 0;
+                            for (int i = 0; i < m; i++) {
+                                for (int j = 0; j < n; j++) {
+                                    if (gameMap[i][j] == 'S') shadyCount++;
+                                }
+                            }
+                            if (shadyCount > 0) {
+                                luckyMoveShadow(gameMap, m, n, verticalWalls, horizontalWalls, cRand(0, shadyCount - 1));
+                                PlaySound(moveShadySound);
+                                strcpy(luckyMessage, "Shady Moved!");
+                                luckyMessageTimer = luckyMessageDuration;
+                            }
+                        }
                     }
-                    int now = gameMap[pPosition[0]][pPosition[1]];
 
+                    int now = gameMap[pPosition[0]][pPosition[1]];
                     gameMap[pPosition[0]][pPosition[1]] = '0';
                     pPosition[1]--;
                     gameMap[pPosition[0]][pPosition[1]] = now;
-                    yourTurn = 0;
+
+                    yourTurn = extraTurn ? 1 : 0;
                     players[currentPlayerTurn].x = pPosition[0];
                     players[currentPlayerTurn].y = pPosition[1];
-                    if (playerCount > 1) currentPlayerTurn++;
-                    for (int i = 0; i < tempWallCount; i++) {
-                        tempWalls[i].lifeTime--;
+
+                    if (!extraTurn) {
+                        if (playerCount > 1) currentPlayerTurn++;
+                        for (int i = 0; i < tempWallCount; i++) {
+                            tempWalls[i].lifeTime--;
+                        }
                     }
                 }
                 turnTimer = turnDelayDuration;
@@ -315,23 +381,74 @@ int main(void) {
                 if (checkWallAround(m, n, verticalWalls, horizontalWalls, pPosition[0], pPosition[1], "DOWN")) {
                     strcpy(message, "You can't go there!");
                 } else {
-                    if (gameMap[pPosition[0]][pPosition[1] + 1] == 'H') {
+                    int extraTurn = 0;
+                    char targetCell = gameMap[pPosition[0]][pPosition[1] + 1];
+
+                    if (targetCell == 'H') {
                         gameOver = 2;
+                        PlaySound(victorySound);
                         strcpy(endMessage, "YOU WIN! Reached Core Light.");
-                    } else if (gameMap[pPosition[0]][pPosition[1] + 1] == 'S') {
+                    } else if (targetCell == 'S') {
                         gameOver = 1;
                         strcpy(endMessage, "GAME OVER! Do you want to eat shady?\nPress C to continue");
+                    } else if (targetCell == 'G') {
+                        int luckyEvent = cRand(1, 4);
+                        PlaySound(gettingLuckySound);
+                        if (luckyEvent == 1) {
+                            extraTurn = 1;
+                            strcpy(luckyMessage, "Extra Turn!");
+                            luckyMessageTimer = luckyMessageDuration;
+                        } else if (luckyEvent == 2) {
+                            luckyAddWalls(&energy);
+                            PlaySound(takeTwoEnergySound);
+                            strcpy(luckyMessage, "+2 Energy!");
+                            luckyMessageTimer = luckyMessageDuration;
+                        } else if (luckyEvent == 3) {
+                            luckyEarthquake(gameMap, m, n, verticalWalls, horizontalWalls);
+                            PlaySound(earthquakeSound);
+                            strcpy(luckyMessage, "Earthquake! All moved!");
+                            luckyMessageTimer = luckyMessageDuration;
+                            for (int p = 0; p < playerCount; p++) {
+                                if (players[p].active == 0) continue;
+                                for (int i = 0; i < m; i++) {
+                                    for (int j = 0; j < n; j++) {
+                                        if (gameMap[i][j] == '0' + players[p].id) {
+                                            players[p].x = i;
+                                            players[p].y = j;
+                                        }
+                                    }
+                                }
+                            }
+                        } else if (luckyEvent == 4) {
+                            int shadyCount = 0;
+                            for (int i = 0; i < m; i++) {
+                                for (int j = 0; j < n; j++) {
+                                    if (gameMap[i][j] == 'S') shadyCount++;
+                                }
+                            }
+                            if (shadyCount > 0) {
+                                luckyMoveShadow(gameMap, m, n, verticalWalls, horizontalWalls, cRand(0, shadyCount - 1));
+                                PlaySound(moveShadySound);
+                                strcpy(luckyMessage, "Shady Moved!");
+                                luckyMessageTimer = luckyMessageDuration;
+                            }
+                        }
                     }
+
                     int now = gameMap[pPosition[0]][pPosition[1]];
                     gameMap[pPosition[0]][pPosition[1]] = '0';
                     pPosition[1]++;
                     gameMap[pPosition[0]][pPosition[1]] = now;
-                    yourTurn = 0;
+
+                    yourTurn = extraTurn ? 1 : 0;
                     players[currentPlayerTurn].x = pPosition[0];
                     players[currentPlayerTurn].y = pPosition[1];
-                    if (playerCount > 1) currentPlayerTurn++;
-                    for (int i = 0; i < tempWallCount; i++) {
-                        tempWalls[i].lifeTime--;
+
+                    if (!extraTurn) {
+                        if (playerCount > 1) currentPlayerTurn++;
+                        for (int i = 0; i < tempWallCount; i++) {
+                            tempWalls[i].lifeTime--;
+                        }
                     }
                 }
                 turnTimer = turnDelayDuration;
@@ -339,23 +456,74 @@ int main(void) {
                 if (checkWallAround(m, n, verticalWalls, horizontalWalls, pPosition[0], pPosition[1], "LEFT")) {
                     strcpy(message, "You can't go there!");
                 } else {
-                    if (gameMap[pPosition[0] - 1][pPosition[1]] == 'H') {
+                    int extraTurn = 0;
+                    char targetCell = gameMap[pPosition[0] - 1][pPosition[1]];
+
+                    if (targetCell == 'H') {
                         gameOver = 2;
+                        PlaySound(victorySound);
                         strcpy(endMessage, "YOU WIN! Reached Core Light.");
-                    } else if (gameMap[pPosition[0] - 1][pPosition[1]] == 'S') {
+                    } else if (targetCell == 'S') {
                         gameOver = 1;
                         strcpy(endMessage, "GAME OVER! Do you want to eat shady?\nPress C to continue");
+                    } else if (targetCell == 'G') {
+                        int luckyEvent = cRand(1, 4);
+                        PlaySound(gettingLuckySound);
+                        if (luckyEvent == 1) {
+                            extraTurn = 1;
+                            strcpy(luckyMessage, "Extra Turn!");
+                            luckyMessageTimer = luckyMessageDuration;
+                        } else if (luckyEvent == 2) {
+                            luckyAddWalls(&energy);
+                            PlaySound(takeTwoEnergySound);
+                            strcpy(luckyMessage, "+2 Energy!");
+                            luckyMessageTimer = luckyMessageDuration;
+                        } else if (luckyEvent == 3) {
+                            luckyEarthquake(gameMap, m, n, verticalWalls, horizontalWalls);
+                            PlaySound(earthquakeSound);
+                            strcpy(luckyMessage, "Earthquake! All moved!");
+                            luckyMessageTimer = luckyMessageDuration;
+                            for (int p = 0; p < playerCount; p++) {
+                                if (players[p].active == 0) continue;
+                                for (int i = 0; i < m; i++) {
+                                    for (int j = 0; j < n; j++) {
+                                        if (gameMap[i][j] == '0' + players[p].id) {
+                                            players[p].x = i;
+                                            players[p].y = j;
+                                        }
+                                    }
+                                }
+                            }
+                        } else if (luckyEvent == 4) {
+                            int shadyCount = 0;
+                            for (int i = 0; i < m; i++) {
+                                for (int j = 0; j < n; j++) {
+                                    if (gameMap[i][j] == 'S') shadyCount++;
+                                }
+                            }
+                            if (shadyCount > 0) {
+                                luckyMoveShadow(gameMap, m, n, verticalWalls, horizontalWalls, cRand(0, shadyCount - 1));
+                                PlaySound(moveShadySound);
+                                strcpy(luckyMessage, "Shady Moved!");
+                                luckyMessageTimer = luckyMessageDuration;
+                            }
+                        }
                     }
+
                     int now = gameMap[pPosition[0]][pPosition[1]];
                     gameMap[pPosition[0]][pPosition[1]] = '0';
                     pPosition[0]--;
                     gameMap[pPosition[0]][pPosition[1]] = now;
-                    yourTurn = 0;
+
+                    yourTurn = extraTurn ? 1 : 0;
                     players[currentPlayerTurn].x = pPosition[0];
                     players[currentPlayerTurn].y = pPosition[1];
-                    if (playerCount > 1) currentPlayerTurn++;
-                    for (int i = 0; i < tempWallCount; i++) {
-                        tempWalls[i].lifeTime--;
+
+                    if (!extraTurn) {
+                        if (playerCount > 1) currentPlayerTurn++;
+                        for (int i = 0; i < tempWallCount; i++) {
+                            tempWalls[i].lifeTime--;
+                        }
                     }
                 }
                 turnTimer = turnDelayDuration;
@@ -363,24 +531,74 @@ int main(void) {
                 if (checkWallAround(m, n, verticalWalls, horizontalWalls, pPosition[0], pPosition[1], "RIGHT")) {
                     strcpy(message, "You can't go there!");
                 } else {
-                    if (gameMap[pPosition[0] + 1][pPosition[1]] == 'H') {
+                    int extraTurn = 0;
+                    char targetCell = gameMap[pPosition[0] + 1][pPosition[1]];
+
+                    if (targetCell == 'H') {
                         gameOver = 2;
+                        PlaySound(victorySound);
                         strcpy(endMessage, "YOU WIN! Reached Core Light.");
-                    } else if (gameMap[pPosition[0] + 1][pPosition[1]] == 'S') {
+                    } else if (targetCell == 'S') {
                         gameOver = 1;
                         strcpy(endMessage, "GAME OVER! Do you want to eat shady?\nPress C to continue");
+                    } else if (targetCell == 'G') {
+                        int luckyEvent = cRand(1, 4);
+                        PlaySound(gettingLuckySound);
+                        if (luckyEvent == 1) {
+                            extraTurn = 1;
+                            strcpy(luckyMessage, "Extra Turn!");
+                            luckyMessageTimer = luckyMessageDuration;
+                        } else if (luckyEvent == 2) {
+                            luckyAddWalls(&energy);
+                            PlaySound(takeTwoEnergySound);
+                            strcpy(luckyMessage, "+2 Energy!");
+                            luckyMessageTimer = luckyMessageDuration;
+                        } else if (luckyEvent == 3) {
+                            luckyEarthquake(gameMap, m, n, verticalWalls, horizontalWalls);
+                            PlaySound(earthquakeSound);
+                            strcpy(luckyMessage, "Earthquake! All moved!");
+                            luckyMessageTimer = luckyMessageDuration;
+                            for (int p = 0; p < playerCount; p++) {
+                                if (players[p].active == 0) continue;
+                                for (int i = 0; i < m; i++) {
+                                    for (int j = 0; j < n; j++) {
+                                        if (gameMap[i][j] == '0' + players[p].id) {
+                                            players[p].x = i;
+                                            players[p].y = j;
+                                        }
+                                    }
+                                }
+                            }
+                        } else if (luckyEvent == 4) {
+                            int shadyCount = 0;
+                            for (int i = 0; i < m; i++) {
+                                for (int j = 0; j < n; j++) {
+                                    if (gameMap[i][j] == 'S') shadyCount++;
+                                }
+                            }
+                            if (shadyCount > 0) {
+                                luckyMoveShadow(gameMap, m, n, verticalWalls, horizontalWalls, cRand(0, shadyCount - 1));
+                                PlaySound(moveShadySound);
+                                strcpy(luckyMessage, "Shady Moved!");
+                                luckyMessageTimer = luckyMessageDuration;
+                            }
+                        }
                     }
-                    int now = gameMap[pPosition[0]][pPosition[1]];
 
+                    int now = gameMap[pPosition[0]][pPosition[1]];
                     gameMap[pPosition[0]][pPosition[1]] = '0';
                     pPosition[0]++;
                     gameMap[pPosition[0]][pPosition[1]] = now;
-                    yourTurn = 0;
+
+                    yourTurn = extraTurn ? 1 : 0;
                     players[currentPlayerTurn].x = pPosition[0];
                     players[currentPlayerTurn].y = pPosition[1];
-                    if (playerCount > 1) currentPlayerTurn++;
-                    for (int i = 0; i < tempWallCount; i++) {
-                        tempWalls[i].lifeTime--;
+
+                    if (!extraTurn) {
+                        if (playerCount > 1) currentPlayerTurn++;
+                        for (int i = 0; i < tempWallCount; i++) {
+                            tempWalls[i].lifeTime--;
+                        }
                     }
                 }
                 turnTimer = turnDelayDuration;
@@ -579,7 +797,6 @@ int main(void) {
                                     }
                                     sx = nextX;
                                     gameMap[sx][sy] = 'S';
-                                    yourTurn = 1;
                                 }
                             }
                         }
@@ -614,13 +831,13 @@ int main(void) {
                                     }
                                     sy = nextY;
                                     gameMap[sx][sy] = 'S';
-                                    yourTurn = 1;
                                 }
                             }
                         }
                     }
                 }
 
+                yourTurn = 1;
                 turnTimer = 0;
             }
         }
@@ -662,6 +879,11 @@ int main(void) {
     UnloadTexture(peace);
     UnloadTexture(background);
     UnloadMusicStream(music);
+    UnloadSound(victorySound);
+    UnloadSound(takeTwoEnergySound);
+    UnloadSound(moveShadySound);
+    UnloadSound(gettingLuckySound);
+    UnloadSound(earthquakeSound);
     UnloadTexture(elec);
     UnloadTexture(vWall);
     UnloadTexture(hWall);
