@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
+
 
 #define MAX_SIZE 20
 
@@ -65,8 +67,6 @@ int checkWalls(int m, int n,
             }
         }
     }
-
-
     if (visitedCount == m * n) {
         return 0;
     } else {
@@ -76,8 +76,9 @@ int checkWalls(int m, int n,
 
 int initializeGameMap(char gameMap[MAX_SIZE][MAX_SIZE], int m, int n,
                       int verticalWalls[MAX_SIZE][MAX_SIZE], int horizontalWalls[MAX_SIZE][MAX_SIZE]) {
-    for (int i = 0; i < 12; i++) {
-        for (int j = 0; j < 12; j++) {
+    srand(time(NULL));
+    for (int i = 0; i < MAX_SIZE; i++) {
+        for (int j = 0; j < MAX_SIZE; j++) {
             gameMap[i][j] = '0';
         }
     }
@@ -137,9 +138,26 @@ int initializeGameMap(char gameMap[MAX_SIZE][MAX_SIZE], int m, int n,
         }
     }
 
-    int countWall;
+    int luckyCount = cRand(1, m-1);
+    for (int i = 0; i < luckyCount; i++) {
+        while (1) {
+            int r = cRand(0, m - 1);
+            int c = cRand(0, n - 1);
 
+            if (r >= m || c >= n || r < 0 || c < 0) {
+                printf("Error: Out of Index [3]\n");
+            } else if (gameMap[r][c] == '0') {
+                gameMap[r][c] = 'G';
+                break;
+            } else {
+                printf("Error: This is filled [3]\n");
+            }
+        }
+    }
+
+    int countWall;
     scanf("%d", &countWall);
+
     do {
         for (int i = 0; i < MAX_SIZE; i++) {
             for (int j = 0; j < MAX_SIZE; j++) {
@@ -150,41 +168,44 @@ int initializeGameMap(char gameMap[MAX_SIZE][MAX_SIZE], int m, int n,
 
         int vWallCount = cRand(0, countWall);
         int hWallCount = countWall - vWallCount;
-        printf("%d", vWallCount);
-        printf("\n");
-        printf("%d\n", hWallCount);
-        int count = 0;
 
-        int i = 0;
-        while (i < vWallCount && count <= countWall) {
+        printf("%d\n", vWallCount);
+        printf("%d\n", hWallCount);
+
+        int placedVWalls = 0;
+        int attempts = 0;
+        int maxAttempts = (m - 1) * n * 10;
+
+        while (placedVWalls < vWallCount && attempts < maxAttempts) {
             int x = cRand(0, m - 2);
             int y = cRand(0, n - 1);
 
-            if (verticalWalls[x][y] == 1) {
-                continue;
-            } else {
+            if (verticalWalls[x][y] == 0) {
                 verticalWalls[x][y] = 1;
-                i++;
-                count++;
+                placedVWalls++;
             }
+            attempts++;
         }
 
-        i = 0;
-        while (i < hWallCount && count <= countWall) {
+        int placedHWalls = 0;
+        attempts = 0;
+        maxAttempts = m * (n - 1) * 10;
+
+        while (placedHWalls < hWallCount && attempts < maxAttempts) {
             int x = cRand(0, m - 1);
             int y = cRand(0, n - 2);
 
-            if (horizontalWalls[x][y] == 1) {
-                continue;
-            } else {
+            if (horizontalWalls[x][y] == 0) {
                 horizontalWalls[x][y] = 1;
-                i++;
-                count++;
+                placedHWalls++;
             }
+            attempts++;
+        }
+
+        if (placedVWalls < vWallCount || placedHWalls < hWallCount) {
+            continue;
         }
     } while (checkWalls(m, n, verticalWalls, horizontalWalls));
-
-
     return 0;
 }
 
