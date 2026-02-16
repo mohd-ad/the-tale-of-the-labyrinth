@@ -287,10 +287,10 @@ int main(void) {
         }
         char topMessage[50];
         snprintf(topMessage, 18, "Player %d'st turn", currentPlayerTurn + 1);
-        DrawRectangle(screenWidth / 2 - MeasureText("Player %d'st turn", 20) / 2, 100,
-                      MeasureText("Player %d'st turn", 28), 40, WHITE);
+        DrawRectangle(screenWidth / 2 - MeasureText("Player %d'st turn", 20) / 2, 30,
+                      MeasureText("Player %d'st                                                                                                                   turn", 28), 40, WHITE);
         DrawText(topMessage, screenWidth / 2 - MeasureText("Player %d'st turn", 20) / 2,
-                 100, 30, players[currentPlayerTurn].color);
+                 30, 30, players[currentPlayerTurn].color);
 
         if (luckyMessageTimer > 0) {
             luckyMessageTimer -= GetFrameTime();
@@ -352,7 +352,8 @@ int main(void) {
                                 }
                             }
                             if (shadyCount > 0) {
-                                luckyMoveShadow(gameMap, m, n, verticalWalls, horizontalWalls, cRand(0, shadyCount - 1));
+                                luckyMoveShadow(gameMap, m, n, verticalWalls, horizontalWalls,
+                                                cRand(0, shadyCount - 1));
                                 PlaySound(moveShadySound);
                                 strcpy(luckyMessage, "Shady Moved!");
                                 luckyMessageTimer = luckyMessageDuration;
@@ -427,7 +428,8 @@ int main(void) {
                                 }
                             }
                             if (shadyCount > 0) {
-                                luckyMoveShadow(gameMap, m, n, verticalWalls, horizontalWalls, cRand(0, shadyCount - 1));
+                                luckyMoveShadow(gameMap, m, n, verticalWalls, horizontalWalls,
+                                                cRand(0, shadyCount - 1));
                                 PlaySound(moveShadySound);
                                 strcpy(luckyMessage, "Shady Moved!");
                                 luckyMessageTimer = luckyMessageDuration;
@@ -502,7 +504,8 @@ int main(void) {
                                 }
                             }
                             if (shadyCount > 0) {
-                                luckyMoveShadow(gameMap, m, n, verticalWalls, horizontalWalls, cRand(0, shadyCount - 1));
+                                luckyMoveShadow(gameMap, m, n, verticalWalls, horizontalWalls,
+                                                cRand(0, shadyCount - 1));
                                 PlaySound(moveShadySound);
                                 strcpy(luckyMessage, "Shady Moved!");
                                 luckyMessageTimer = luckyMessageDuration;
@@ -577,7 +580,8 @@ int main(void) {
                                 }
                             }
                             if (shadyCount > 0) {
-                                luckyMoveShadow(gameMap, m, n, verticalWalls, horizontalWalls, cRand(0, shadyCount - 1));
+                                luckyMoveShadow(gameMap, m, n, verticalWalls, horizontalWalls,
+                                                cRand(0, shadyCount - 1));
                                 PlaySound(moveShadySound);
                                 strcpy(luckyMessage, "Shady Moved!");
                                 luckyMessageTimer = luckyMessageDuration;
@@ -722,14 +726,12 @@ int main(void) {
                 turnTimer = turnDelayDuration;
             }
         }
-
         if (!yourTurn && gameOver != 2) {
             if (turnTimer > 0) {
                 turnTimer -= GetFrameTime();
             } else {
                 int shadyPositions[MAX_SIZE * MAX_SIZE][2];
                 int shadyCount = 0;
-
                 for (int i = 0; i < m; i++) {
                     for (int j = 0; j < n; j++) {
                         if (gameMap[i][j] == 'S') {
@@ -739,22 +741,17 @@ int main(void) {
                         }
                     }
                 }
-
                 for (int k = 0; k < shadyCount; k++) {
+                    int distance = 0;
                     int sx = shadyPositions[k][0];
                     int sy = shadyPositions[k][1];
-
                     playerCaughtThisTurn = 0;
-
                     int closestPlayerIdx = -1;
                     int minDistance = m + n + 100;
-
                     for (int p = 0; p < playerCount; p++) {
                         if (players[p].active == 0) continue;
-
                         int px = players[p].x;
                         int py = players[p].y;
-
                         if (gameMap[px][py] >= '1' && gameMap[px][py] <= '9') {
                             int distance = abs(px - sx) + abs(py - sy);
                             if (distance < minDistance) {
@@ -763,11 +760,9 @@ int main(void) {
                             }
                         }
                     }
-
                     if (closestPlayerIdx != -1) {
                         int targetX = players[closestPlayerIdx].x;
                         int targetY = players[closestPlayerIdx].y;
-
                         int nextX = sx;
                         if (targetX > sx) nextX = sx + 1;
                         else if (targetX < sx) nextX = sx - 1;
@@ -781,12 +776,10 @@ int main(void) {
                                     if (target >= '1' && target <= '9') {
                                         players[closestPlayerIdx].active = 0;
                                         playerCaughtThisTurn = 1;
-
                                         int activePlayers = 0;
                                         for (int p = 0; p < playerCount; p++) {
                                             if (players[p].active == 1) activePlayers++;
                                         }
-
                                         if (activePlayers == 0) {
                                             gameOver = 2;
                                             strcpy(endMessage, "GAME OVER! All surveyors caught!");
@@ -800,43 +793,43 @@ int main(void) {
                                 }
                             }
                         }
-
-                        int nextY = sy;
-                        if (targetY > sy) nextY = sy + 1;
-                        else if (targetY < sy) nextY = sy - 1;
-
-                        if (nextY != sy && playerCaughtThisTurn == 0) {
-                            char target = gameMap[sx][nextY];
-
-                            if (!checkWallAround(m, n, verticalWalls, horizontalWalls, sx, sy,
-                                                 (nextY > sy ? "DOWN" : "UP"))) {
-                                if (target != 'S' && (target == '0' || (target >= '1' && target <= '9'))) {
-                                    gameMap[sx][sy] = '0';
-                                    if (target >= '1' && target <= '9') {
-                                        players[closestPlayerIdx].active = 0;
-                                        playerCaughtThisTurn = 1;
-
-                                        int activePlayers = 0;
-                                        for (int p = 0; p < playerCount; p++) {
-                                            if (players[p].active == 1) activePlayers++;
+                        if (playerCaughtThisTurn == 0) {
+                            int nextY = sy;
+                            if (targetY > sy) {
+                                nextY = sy + 1;
+                            } else if (targetY < sy) {
+                                nextY = sy - 1;
+                            }
+                            if (nextY != sy) {
+                                char target = gameMap[sx][nextY];
+                                if (!checkWallAround(m, n, verticalWalls, horizontalWalls, sx, sy,
+                                                     (nextY > sy ? "DOWN" : "UP"))) {
+                                    if (target != 'S' && (target == '0' || (target >= '1' && target <= '9'))) {
+                                        gameMap[sx][sy] = '0';
+                                        if (target >= '1' && target <= '9') {
+                                            players[closestPlayerIdx].active = 0;
+                                            playerCaughtThisTurn = 1;
+                                            int activePlayers = 0;
+                                            for (int p = 0; p < playerCount; p++) {
+                                                if (players[p].active == 1) activePlayers++;
+                                            }
+                                            if (activePlayers == 0) {
+                                                gameOver = 2;
+                                                strcpy(endMessage, "GAME OVER! All surveyors caught!");
+                                            } else {
+                                                gameOver = 1;
+                                                strcpy(endMessage,
+                                                       "Surveyor caught! Press C to continue or ESC to quit");
+                                            }
                                         }
-
-                                        if (activePlayers == 0) {
-                                            gameOver = 2;
-                                            strcpy(endMessage, "GAME OVER! All surveyors caught!");
-                                        } else {
-                                            gameOver = 1;
-                                            strcpy(endMessage, "Surveyor caught! Press C to continue or ESC to quit");
-                                        }
+                                        sy = nextY;
+                                        gameMap[sx][sy] = 'S';
                                     }
-                                    sy = nextY;
-                                    gameMap[sx][sy] = 'S';
                                 }
                             }
                         }
                     }
                 }
-
                 yourTurn = 1;
                 turnTimer = 0;
             }

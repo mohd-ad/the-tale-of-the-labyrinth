@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <math.h>
 
 
 #define MAX_SIZE 20
@@ -84,9 +85,11 @@ int initializeGameMap(char gameMap[MAX_SIZE][MAX_SIZE], int m, int n,
     }
 
 
+    int coreLightX = 0;
+    int coreLightY = 0;
     while (1) {
-        int coreLightX = cRand(0, m - 1);
-        int coreLightY = cRand(0, n - 1);
+        coreLightX = cRand(0, m - 1);
+        coreLightY = cRand(0, n - 1);
         if (gameMap[coreLightX][coreLightY] == '0') {
             gameMap[coreLightX][coreLightY] = 'H';
             break;
@@ -107,10 +110,16 @@ int initializeGameMap(char gameMap[MAX_SIZE][MAX_SIZE], int m, int n,
             if (x >= m || y >= n || x < 0 || y < 0) {
                 printf("Error: Out of Index [2]\n");
             } else if (gameMap[x][y] == '0') {
-                gameMap[x][y] = '1' + i;
-                surveyorLocations[i][0] = x;
-                surveyorLocations[i][1] = y;
-                break;
+                int fasele = sqrt(pow(x - coreLightX, 2) + pow(y- coreLightY, 2));
+                if (fasele > 2) {
+                    gameMap[x][y] = '1' + i;
+                    surveyorLocations[i][0] = x;
+                    surveyorLocations[i][1] = y;
+                    break;
+                }
+                else {
+                    printf("Error: This is filled [2]\n");
+                }
             } else {
                 printf("Error: This is filled [2]\n");
             }
@@ -128,10 +137,21 @@ int initializeGameMap(char gameMap[MAX_SIZE][MAX_SIZE], int m, int n,
             if (r >= m || c >= n || r < 0 || c < 0) {
                 printf("Error: Out of Index [3]\n");
             } else if (gameMap[r][c] == '0') {
-                gameMap[r][c] = 'S';
-                shadyLocations[i][0] = r;
-                shadyLocations[i][1] = c;
-                break;
+                int ok = 1;
+                for (int j = 0; j < surveyorCount; j++) {
+                    int fasele = sqrt(pow(surveyorLocations[j][0] -r, 2) + pow(surveyorLocations[j][1] - c, 2));
+                    if (fasele < 2) {
+                        ok = 0;
+                        break;
+                    }
+                }
+                if (ok) {
+                    gameMap[r][c] = 'S';
+                    shadyLocations[i][0] = r;
+                    shadyLocations[i][1] = c;
+                    break;
+                }
+
             } else {
                 printf("Error: This is filled [3]\n");
             }
@@ -169,14 +189,8 @@ int initializeGameMap(char gameMap[MAX_SIZE][MAX_SIZE], int m, int n,
         int vWallCount = cRand(0, countWall);
         int hWallCount = countWall - vWallCount;
 
-        printf("%d\n", vWallCount);
-        printf("%d\n", hWallCount);
-
         int placedVWalls = 0;
-        int attempts = 0;
-        int maxAttempts = (m - 1) * n * 10;
-
-        while (placedVWalls < vWallCount && attempts < maxAttempts) {
+        while (placedVWalls < vWallCount) {
             int x = cRand(0, m - 2);
             int y = cRand(0, n - 1);
 
@@ -184,14 +198,11 @@ int initializeGameMap(char gameMap[MAX_SIZE][MAX_SIZE], int m, int n,
                 verticalWalls[x][y] = 1;
                 placedVWalls++;
             }
-            attempts++;
         }
 
         int placedHWalls = 0;
-        attempts = 0;
-        maxAttempts = m * (n - 1) * 10;
 
-        while (placedHWalls < hWallCount && attempts < maxAttempts) {
+        while (placedHWalls < hWallCount) {
             int x = cRand(0, m - 1);
             int y = cRand(0, n - 2);
 
@@ -199,7 +210,6 @@ int initializeGameMap(char gameMap[MAX_SIZE][MAX_SIZE], int m, int n,
                 horizontalWalls[x][y] = 1;
                 placedHWalls++;
             }
-            attempts++;
         }
 
         if (placedVWalls < vWallCount || placedHWalls < hWallCount) {
@@ -240,86 +250,41 @@ int min(int x, int y) {
     return x > y ? y : x;
 }
 
-int luckyExtraTurn() {
-    return 1;
-}
-
 int luckyAddWalls(int *energy) {
     *energy += 2;
     return 1;
 }
-
 int luckyEarthquake(char gameMap[MAX_SIZE][MAX_SIZE], int m, int n,
                      int verticalWalls[MAX_SIZE][MAX_SIZE],
                      int horizontalWalls[MAX_SIZE][MAX_SIZE]) {
     for (int i = 0; i < m; i++) {
         for (int j = 0; j < n; j++) {
-            if (gameMap[i][j] >= '1' && gameMap[i][j] <= '9') {
-                int currentX = i;
-                int currentY = j;
-
+            char currentChar = gameMap[i][j];
+            if ((currentChar >= '1' && currentChar <= '9') || currentChar == 'S') {
                 int directions[4][2] = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};
                 int validMoves[4][2];
                 int validCount = 0;
-
-                for (int d = 0; d < 4; d++) {
-                    int newX = currentX + directions[d][0];
-                    int newY = currentY + directions[d][1];
-
-                    if (newX >= 0 && newX < m && newY >= 0 && newY < n &&
-                        canMove(currentX, currentY, newX, newY, m, n, verticalWalls, horizontalWalls)) {
-                        validMoves[validCount][0] = newX;
-                        validMoves[validCount][1] = newY;
-                        validCount++;
-                    }
-                }
-
-                if (validCount > 0) {
-                    int randomIndex = cRand(0, validCount - 1);
-                    int newX = validMoves[randomIndex][0];
-                    int newY = validMoves[randomIndex][1];
-
-                    char playerChar = gameMap[currentX][currentY];
-                    char temp = gameMap[newX][newY];
-                    gameMap[currentX][currentY] = (temp == '0' || temp == 'G') ? '0' : temp;
-                    gameMap[newX][newY] = playerChar;
-                }
-            }
-        }
-    }
-
-    for (int i = 0; i < m; i++) {
-        for (int j = 0; j < n; j++) {
-            if (gameMap[i][j] == 'S') {
-                int directions[4][2] = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};
-                int validMoves[4][2];
-                int validCount = 0;
-
                 for (int d = 0; d < 4; d++) {
                     int newX = i + directions[d][0];
                     int newY = j + directions[d][1];
-
                     if (newX >= 0 && newX < m && newY >= 0 && newY < n &&
                         canMove(i, j, newX, newY, m, n, verticalWalls, horizontalWalls)) {
                         validMoves[validCount][0] = newX;
                         validMoves[validCount][1] = newY;
                         validCount++;
-                    }
+                        }
                 }
-
                 if (validCount > 0) {
                     int randomIndex = cRand(0, validCount - 1);
                     int newX = validMoves[randomIndex][0];
                     int newY = validMoves[randomIndex][1];
-
                     char temp = gameMap[newX][newY];
                     gameMap[i][j] = (temp == '0' || temp == 'G') ? '0' : temp;
-                    gameMap[newX][newY] = 'S';
+                    gameMap[newX][newY] = currentChar;
                 }
             }
         }
     }
-
     return 1;
 }
 
